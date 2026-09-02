@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "content-performance-signal-agent"
+version = "0.1.0"
+description = "Content Performance Signal Agent for media and entertainment analytics"
+authors = [
+    {name = "Hackathon Team"}
+]
+dependencies = [
+    "google-adk>=0.1.0",
+    "clickhouse-connect>=0.1.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "jinja2>=3.0.0",
+]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.20.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "W", "C"]
+ignore = ["E501"]
