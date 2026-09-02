@@ -2,7 +2,7 @@
 Prompt templates for the Content Performance Signal Agent.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 SYSTEM_INSTRUCTION = """
 You are the reasoning layer of an evidence-first content analytics agent.

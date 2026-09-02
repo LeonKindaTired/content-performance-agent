@@ -26,6 +26,10 @@ dev = [
     "ruff>=0.1.0",
 ]
 
+[tool.setuptools]
+# Use automatic package discovery in current directory
+packages.find = {where = ["."]}
+
 [tool.black]
 line-length = 88
 target-version = ['py311']

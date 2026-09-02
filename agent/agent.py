@@ -13,11 +13,11 @@ from google.adk.tools import BaseTool, FunctionTool
 from google.adk.models import Gemini
 
 # Import our modules
-from ..tools.clickhouse_tool import get_clickhouse_tool, ClickHouseTool
-from ..analytics.data_quality import assess_data_quality, validate_content_id
-from ..analytics.signals import aggregate_episode_data
-from ..analytics.decision_policy import evaluate_decision, calculate_confidence, Recommendation
-from ..agent.prompts import SYSTEM_INSTRUCTION, format_prompt
+from content_performance_signal_agent.tools.clickhouse_tool import get_clickhouse_tool, ClickHouseTool
+from content_performance_signal_agent.analytics.data_quality import assess_data_quality, validate_content_id
+from content_performance_signal_agent.analytics.signals import aggregate_episode_data
+from content_performance_signal_agent.analytics.decision_policy import evaluate_decision, calculate_confidence, Recommendation
+from content_performance_signal_agent.agent.prompts import SYSTEM_INSTRUCTION, format_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -29,17 +29,18 @@ class ContentPerformanceAgent(Agent):
 
     def __init__(self):
         # Initialize ClickHouse tool
-        self.clickhouse_tool = get_clickhouse_tool()
+        ContentPerformanceAgent._clickhouse_tool = get_clickhouse_tool()
+        print("Initializing ClickHouse tool")
 
         # Define the tools this agent can use
         tools = [
             FunctionTool(
                 func=self._get_content_data,
-                description="Retrieve episode performance data for a content ID from ClickHouse"
+                
             ),
             FunctionTool(
                 func=self._validate_content_id,
-                description="Validate a content ID format"
+                
             )
         ]
 
@@ -73,10 +74,10 @@ class ContentPerformanceAgent(Agent):
         """
         try:
             # Get episode performance data
-            episodes = self.clickhouse_tool.get_content_performance(content_id, date_range)
+            episodes = ContentPerformanceAgent._clickhouse_tool.get_content_performance(content_id, date_range)
 
             # Get content metadata
-            metadata = self.clickhouse_tool.get_content_metadata(content_id)
+            metadata = ContentPerformanceAgent._clickhouse_tool.get_content_metadata(content_id)
 
             return {
                 "content_id": content_id,

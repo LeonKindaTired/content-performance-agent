@@ -14,8 +14,12 @@ from agent.agent import ContentPerformanceAgent
 class TestContentPerformanceAgent(unittest.TestCase):
     def setUp(self):
         self.agent = ContentPerformanceAgent()
-        # Mock the clickhouse_tool
-        self.agent.clickhouse_tool = MagicMock()
+        # Mock the clickhouse_tool (class attribute)
+        self.clickhouse_tool_patch = patch.object(ContentPerformanceAgent, '_clickhouse_tool')
+        self.mock_clickhouse_tool = self.clickhouse_tool_patch.start()
+
+    def tearDown(self):
+        self.clickhouse_tool_patch.stop()
 
     def test_validate_content_id_tool(self):
         # Test the tool method
@@ -56,7 +60,7 @@ class TestContentPerformanceAgent(unittest.TestCase):
         }
 
         # Mock clickhouse tool responses
-        self.agent.clickhouse_tool.get_content_performance.return_value = [
+        self.mock_clickhouse_tool.get_content_performance.return_value = [
             {
                 "content_id": "SHOW-001",
                 "episode_number": i,
@@ -70,7 +74,7 @@ class TestContentPerformanceAgent(unittest.TestCase):
                 "watch_time_minutes": 400000
             } for i in range(1, 9)
         ]
-        self.agent.clickhouse_tool.get_content_metadata.return_value = {
+        self.mock_clickhouse_tool.get_content_metadata.return_value = {
             "content_id": "SHOW-001",
             "title": "Test Show",
             "content_type": "series",
@@ -109,8 +113,8 @@ class TestContentPerformanceAgent(unittest.TestCase):
 
     def test_analyze_content_no_data(self):
         # Mock clickhouse to return no episodes
-        self.agent.clickhouse_tool.get_content_performance.return_value = []
-        self.agent.clickhouse_tool.get_content_metadata.return_value = {
+        self.mock_clickhouse_tool.get_content_performance.return_value = []
+        self.mock_clickhouse_tool.get_content_metadata.return_value = {
             "content_id": "SHOW-001",
             "title": "Test Show",
             "content_type": "series",

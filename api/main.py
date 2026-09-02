@@ -4,6 +4,7 @@ FastAPI application for the Content Performance Signal Agent.
 
 import os
 import logging
+from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
