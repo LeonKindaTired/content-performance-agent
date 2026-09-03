@@ -6,7 +6,8 @@ import os
 import logging
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -30,6 +31,9 @@ app = FastAPI(
 # Create agent instance
 agent = create_agent()
 
+# Mount static files (for frontend assets if needed)
+# app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
 # Request/Response models
 class ContentRequest(BaseModel):
     content_id: str
@@ -50,7 +54,7 @@ class ContentResponse(BaseModel):
     provenance: dict
 
 # Health check endpoint
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
     # Check ClickHouse connection
@@ -71,7 +75,7 @@ async def health_check():
     }
 
 # Main analysis endpoint
-@app.post("/analyze", response_model=ContentResponse)
+@app.post("/api/analyze", response_model=ContentResponse)
 async def analyze_content(request: ContentRequest):
     """
     Analyze content performance and return a recommendation.
@@ -367,13 +371,25 @@ def _extract_evidence_strings(analysis_result: Dict[str, Any]) -> List[str]:
 
     return evidence
 
-# Root endpoint
-@app.get("/")
-async def root():
+# Serve frontend
+@app.get("/", response_class=HTMLResponse)
+async def serve_frontend():
+    """Serve the frontend HTML page."""
+    try:
+        with open("frontend/index.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Frontend not found")
+
+# API root endpoint
+@app.get("/api/")
+async def api_root():
+    """API root endpoint."""
     return {
         "message": "Content Performance Signal Agent API",
         "version": "0.1.0",
-        "docs": "/docs"
+        "docs": "/api/docs"
     }
 
 if __name__ == "__main__":

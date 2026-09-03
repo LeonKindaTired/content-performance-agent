@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Performance Signal Agent</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+        }
+
+        .input-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            min-width: 100px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .input-group button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .input-group button:hover {
+            background: #2980b9;
+        }
+
+        .input-group button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .status-section, .results-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .status-section h2, .results-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .status-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .status-item.waiting {
+            opacity: 0.6;
+        }
+
+        .status-item.completed .status-icon {
+            color: #27ae60;
+        }
+
+        .status-item.failed .status-icon {
+            color: #e74c3c;
+        }
+
+        .status-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .recommendation-card {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin: 25px 0;
+        }
+
+        .recommendation-card h2 {
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+
+        .recommendation-card .confidence {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+
+        .evidence-section, .reasoning-section, .warnings-section, .provenance-section {
+            margin: 25px 0;
+        }
+
+        .evidence-section h3, .reasoning-section h3, .warnings-section h3, .provenance-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .evidence-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .evidence-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+
+        .reasoning-text {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            line-height: 1.8;
+        }
+
+        .warnings-list {
+            background: #fef9e7;
+            border: 1px solid #f39c12;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .warnings-list h4 {
+            margin-top: 0;
+            color: #d35400;
+        }
+
+        .warnings-list ul {
+            margin: 10px 0 0;
+            padding-left: 20px;
+        }
+
+        .provenance-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .provenance-item:last-child {
+            border-bottom: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fadbd8;
+            color: #922b21;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #e74c3c;
+        }
+
+        @media (max-width: 600px) {
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .input-group input {
+                margin-bottom: 10px;
+            }
+
+            .status-items {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Content Performance Signal Agent</h1>
+        <p>Agentic analytics workflow for media and entertainment content performance analysis</p>
+    </div>
+
+    <div class="input-section">
+        <div class="input-group">
+            <label for="contentId">Content ID:</label>
+            <input type="text" id="contentId" placeholder="Enter content ID (e.g., SHOW-042)" value="SHOW-042">
+            <button id="analyzeBtn">Analyze</button>
+        </div>
+        <p id="helpText">Enter a content ID to analyze its performance and get evidence-based recommendations</p>
+    </div>
+
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        <span>Analyzing content...</span>
+    </div>
+
+    <div id="error" class="error-message"></div>
+
+    <div class="status-section" id="statusSection">
+        <h2>Analysis Status</h2>
+        <div class="status-items" id="statusItems">
+            <div class="status-item waiting" id="statusInput">
+                <span class="status-icon">🔍</span>
+                <span>Validating input</span>
+            </div>
+            <div class="status-item waiting" id="statusRetrieval">
+                <span class="status-icon">🗄️</span>
+                <span>Retrieving from ClickHouse</span>
+            </div>
+            <div class="status-item waiting" id="statusValidation">
+                <span class="status-icon">✅</span>
+                <span>Data quality validated</span>
+            </div>
+            <div class="status-item waiting" id="statusSignals">
+                <span class="status-icon">📊</span>
+                <span>Signals calculated</span>
+            </div>
+            <div class="status-item waiting" id="statusPolicy">
+                <span class="status-icon">⚖️</span>
+                <span>Decision policy evaluated</span>
+            </div>
+            <div class="status-item waiting" id="statusReasoning">
+                <span class="status-icon">🧠</span>
+                <span>Gemini reasoning complete</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-section" id="resultsSection">
+        <div class="recommendation-card" id="recommendationCard">
+            <h2 id="recommendationText">REPOSITION</h2>
+            <div class="confidence" id="confidenceText">82% confidence</div>
+        </div>
+
+        <div class="evidence-section">
+            <h3>📈 Evidence</h3>
+            <div class="evidence-list" id="evidenceList">
+                <!-- Evidence items will be inserted here -->
+            </div>
+        </div>
+
+        <div class="reasoning-section">
+            <h3>💭 Reasoning</h3>
+            <div class="reasoning-text" id="reasoningText">
+                <!-- Reasoning text will be inserted here -->
+            </div>
+        </div>
+
+        <div class="warnings-section" id="warningsSection">
+            <h3>⚠️ Warnings</h3>
+            <div id="warningsList">
+                <!-- Warnings will be inserted here -->
+            </div>
+        </div>
+
+        <div class="provenance-section">
+            <h3>🔍 Provenance</h3>
+            <div class="provenance-item">
+                <span>Data source:</span>
+                <span id="provenanceDataSource">ClickHouse</span>
+            </div>
+            <div class="provenance-item">
+                <span>Analysis version:</span>
+                <span id="provenanceVersion">1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const contentIdInput = document.getElementById('contentId');
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const statusSection = document.getElementById('statusSection');
+            const resultsSection = document.getElementById('resultsSection');
+            statusItems = {
+                input: document.getElementById('statusInput'),
+                retrieval: document.getElementById('statusRetrieval'),
+                validation: document.getElementById('statusValidation'),
+                signals: document.getElementById('statusSignals'),
+                policy: document.getElementById('statusPolicy'),
+                reasoning: document.getElementById('statusReasoning')
+            };
+            const recommendationCard = document.getElementById('recommendationCard');
+            const recommendationText = document.getElementById('recommendationText');
+            const confidenceText = document.getElementById('confidenceText');
+            const evidenceList = document.getElementById('evidenceList');
+            const reasoningText = document.getElementById('reasoningText');
+            const warningsSection = document.getElementById('warningsSection');
+            const warningsList = document.getElementById('warningsList');
+            const provenanceDataSource = document.getElementById('provenanceDataSource');
+            const provenanceVersion = document.getElementById('provenanceVersion');
+
+            // Reset UI
+            function resetUI() {
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                statusSection.style.display = 'none';
+                resultsSection.style.display = 'none';
+
+                // Reset status items
+                Object.values(statusItems).forEach(item => {
+                    item.className = 'status-item waiting';
+                });
+
+                // Reset results
+                recommendationCard.style.display = 'none';
+                evidenceList.innerHTML = '';
+                reasoningText.textContent = '';
+                warningsSection.style.display = 'none';
+                warningsList.innerHTML = '';
+            }
+
+            // Update status
+            function updateStatus(key, status) {
+                const item = statusItems[key];
+                if (item) {
+                    item.className = `status-item ${status}`;
+                }
+            }
+
+            // Show error
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+
+            // Hide error
+            function hideError() {
+                errorDiv.style.display = 'none';
+            }
+
+            // Analyze function
+            async function analyzeContent() {
+                const contentId = contentIdInput.value.trim();
+
+                if (!contentId) {
+                    showError('Please enter a content ID');
+                    return;
+                }
+
+                resetUI();
+                hideError();
+
+                // Show loading
+                loadingDiv.style.display = 'flex';
+                statusSection.style.display = 'block';
+
+                // Update input status
+                updateStatus('input', 'completed');
+
+                try {
+                    // Call the API
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ content_id: contentId })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Analysis failed');
+                    }
+
+                    const data = await response.json();
+
+                    // Update statuses
+                    updateStatus('retrieval', 'completed');
+                    updateStatus('validation', 'completed');
+                    updateStatus('signals', 'completed');
+                    updateStatus('policy', 'completed');
+                    updateStatus('reasoning', 'completed');
+
+                    // Hide loading, show results
+                    loadingDiv.style.display = 'none';
+                    resultsSection.style.display = 'block';
+
+                    // Display recommendation
+                    recommendationText.textContent = data.recommendation;
+                    confidenceText.textContent = `${Math.round(data.confidence * 100)}% confidence`;
+                    recommendationCard.style.display = 'block';
+
+                    // Display evidence
+                    if (data.evidence && Array.isArray(data.evidence)) {
+                        data.evidence.forEach(evidence => {
+                            const div = document.createElement('div');
+                            div.className = 'evidence-item';
+                            div.textContent = evidence;
+                            evidenceList.appendChild(div);
+                        });
+                    }
+
+                    // Display reasoning
+                    if (data.llm_reasoning && data.llm_reasoning.executive_summary) {
+                        reasoningText.textContent = data.llm_reasoning.executive_summary;
+
+                        // Add more reasoning details if available
+                        const details = [];
+                        if (data.llm_reasoning.possible_explanations && data.llm_reasoning.possible_explanations.length > 0) {
+                            details.push('<strong>Possible explanations:</strong>');
+                            details.push('<ul>');
+                            data.llm_reasoning.possible_explanations.forEach(exp => {
+                                details.push(`<li>${exp}</li>`);
+                            });
+                            details.push('</ul>');
+                        }
+
+                        if (data.llm_reasoning.uncertainties && data.llm_reasoning.uncertainties.length > 0) {
+                            details.push('<strong>Uncertainties:</strong>');
+                            details.push('<ul>');
+                            data.llm_reasoning.uncertainties.forEach(unc => {
+                                details.push(`<li>${unc}</li>`);
+                            });
+                            details.push('</ul>');
+                        }
+
+                        if (data.llm_reasoning.next_actions && data.llm_reasoning.next_actions.length > 0) {
+                            details.push('<strong>Recommended actions:</strong>');
+                            details.push('<ul>');
+                            data.llm_reasoning.next_actions.forEach(action => {
+                                details.push(`<li>${action}</li>`);
+                            });
+                            details.push('</ul>');
+                        }
+
+                        if (details.length > 0) {
+                            reasoningText.innerHTML += '<hr>' + details.join('');
+                        }
+                    }
+
+                    // Display warnings
+                    if (data.warnings && data.warnings.length > 0) {
+                        warningsSection.style.display = 'block';
+                        const ul = document.createElement('ul');
+                        data.warnings.forEach(warning => {
+                            const li = document.createElement('li');
+                            li.textContent = warning;
+                            ul.appendChild(li);
+                        });
+                        warningsList.appendChild(ul);
+                    } else {
+                        warningsSection.style.display = 'none';
+                    }
+
+                    // Display provenance
+                    if (data.provenance) {
+                        provenanceDataSource.textContent = data.provenance.data_source || 'ClickHouse';
+                        provenanceVersion.textContent = data.provenance.analysis_version || '1.0.0';
+                    }
+
+                } catch (error) {
+                    loadingDiv.style.display = 'none';
+                    showError(error.message || 'An unknown error occurred');
+                    console.error('Analysis error:', error);
+                }
+            }
+
+            // Event listeners
+            analyzeBtn.addEventListener('click', analyzeContent);
+
+            contentIdInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    analyzeContent();
+                }
+            });
+
+            // Initialize with sample data on load
+            // analyzeContent(); // Uncomment to auto-analyze on load
+        });
+    </script>
+</body>
+</html>
