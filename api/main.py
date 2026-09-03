@@ -57,10 +57,9 @@ class ContentResponse(BaseModel):
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
-    # Check ClickHouse connection
+    # Check ClickHouse connection using the agent's tool
     try:
-        from agent.agent import ClickHouseTool
-        clickhouse_tool = ClickHouseTool()
+        clickhouse_tool = agent._clickhouse_tool
         ch_status = clickhouse_tool.test_connection()
     except Exception as e:
         ch_status = False
