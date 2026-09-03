@@ -13,11 +13,15 @@ from google.adk.tools import BaseTool, FunctionTool
 from google.adk.models import Gemini
 
 # Import our modules
-from content_performance_signal_agent.tools.clickhouse_tool import get_clickhouse_tool, ClickHouseTool
-from content_performance_signal_agent.analytics.data_quality import assess_data_quality, validate_content_id
-from content_performance_signal_agent.analytics.signals import aggregate_episode_data
-from content_performance_signal_agent.analytics.decision_policy import evaluate_decision, calculate_confidence, Recommendation
-from content_performance_signal_agent.agent.prompts import SYSTEM_INSTRUCTION, format_prompt
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from tools.clickhouse_tool import get_clickhouse_tool, ClickHouseTool
+from analytics.data_quality import assess_data_quality, validate_content_id
+from analytics.signals import aggregate_episode_data
+from analytics.decision_policy import evaluate_decision, calculate_confidence, Recommendation
+from agent.prompts import SYSTEM_INSTRUCTION, format_prompt
 
 logger = logging.getLogger(__name__)
 
