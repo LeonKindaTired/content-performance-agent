@@ -135,6 +135,12 @@ async def _invoke_gemini_reasoning(analysis_result: Dict[str, Any]) -> Dict[str,
         from google import genai
         import json as python_json
 
+        # Set Gemini location environment variable for the client
+        # Uses GEMINI_LOCATION (Gemini Enterprise Agent Platform)
+        gemini_location = os.getenv('GEMINI_LOCATION', 'us-central1')
+        if gemini_location:
+            os.environ['GOOGLE_CLOUD_LOCATION'] = gemini_location
+
         # Initialize Gemini client
         # The API key should be available via GOOGLE_APPLICATION_CREDENTIALS or ADC
         client = genai.Client()
