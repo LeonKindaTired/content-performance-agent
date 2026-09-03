@@ -129,12 +129,109 @@ async def analyze_content(request: ContentRequest):
 async def _invoke_gemini_reasoning(analysis_result: Dict[str, Any]) -> Dict[str, Any]:
     """
     Invoke Gemini reasoning based on the analysis result.
-    In a full implementation, this would use the Google ADK or Vertex AI API.
-    For this MVP, we'll create a deterministic mock that follows the expected schema.
+    Uses the Google Gemini API to generate structured reasoning.
     """
-    # TODO: Replace with actual Gemini API call
-    # For now, we'll generate a reasoning based on the evidence
+    try:
+        from google import genai
+        import json as python_json
 
+        # Initialize Gemini client
+        # The API key should be available via GOOGLE_APPLICATION_CREDENTIALS or ADC
+        client = genai.Client()
+
+        # Prepare the prompt for Gemini
+        prompt = _format_gemini_prompt(analysis_result)
+
+        # Configure the model
+        model = os.getenv('GEMINI_MODEL', 'gemini-pro')
+
+        # Generate content with Gemini
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config={
+                "temperature": 0.2,  # Low temperature for consistent, factual responses
+                "top_p": 0.8,
+                "max_output_tokens": 1024,
+            }
+        )
+
+        # Parse the JSON response from Gemini
+        # We expect Gemini to return JSON matching our schema
+        response_text = response.text
+
+        # Try to extract JSON from the response
+        # Gemini might wrap JSON in markdown or add extra text
+        json_str = _extract_json_from_response(response_text)
+        gemini_reasoning = python_json.loads(json_str)
+
+        # Validate that we got the expected structure
+        _validate_gemini_response(gemini_reasoning)
+
+        return gemini_reasoning
+
+    except Exception as e:
+        logger.error(f"Error invoking Gemini API: {e}", exc_info=True)
+        # Fallback to mock reasoning if Gemini fails
+        logger.warning("Falling back to mock Gemini reasoning due to API error")
+        return _mock_gemini_reasoning(analysis_result)
+
+
+def _format_gemini_prompt(analysis_result: Dict[str, Any]) -> str:
+    """Format the prompt for Gemini reasoning based on analysis results."""
+    from agent.prompts import GEMINI_REASONING_PROMPT, format_prompt
+
+    # Extract the components needed for the prompt
+    data_quality = analysis_result.get("data_quality", {})
+    metrics = analysis_result.get("metrics", {})
+    signals = analysis_result.get("signals", {})
+    recommendation = analysis_result.get("deterministic_recommendation", "INVESTIGATE")
+    warnings = analysis_result.get("warnings", [])
+
+    # Use the existing prompt formatting function
+    return format_prompt(data_quality, metrics, signals, recommendation, warnings)
+
+
+def _extract_json_from_response(response_text: str) -> str:
+    """Extract JSON string from Gemini response, handling markdown wrappers."""
+    import re
+
+    # Look for JSON in markdown code blocks
+    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+    if json_match:
+        return json_match.group(1)
+
+    # Look for JSON object directly
+    json_match = re.search(r'(\{.*\})', response_text, re.DOTALL)
+    if json_match:
+        return json_match.group(1)
+
+    # If no JSON found, return the whole text (will likely cause json.loads to fail)
+    return response_text.strip()
+
+
+def _validate_gemini_response(response: Dict[str, Any]) -> None:
+    """Validate that Gemini response has the expected structure."""
+    required_keys = ["executive_summary", "evidence_summary", "possible_explanations", "uncertainties", "next_actions"]
+    for key in required_keys:
+        if key not in response:
+            raise ValueError(f"Missing required key in Gemini response: {key}")
+
+    # Check types
+    if not isinstance(response["executive_summary"], str):
+        raise ValueError("executive_summary must be a string")
+    if not isinstance(response["evidence_summary"], list):
+        raise ValueError("evidence_summary must be a list")
+    if not isinstance(response["possible_explanations"], list):
+        raise ValueError("possible_explanations must be a list")
+    if not isinstance(response["uncertainties"], list):
+        raise ValueError("uncertainties must be a list")
+    if not isinstance(response["next_actions"], list):
+        raise ValueError("next_actions must be a list")
+
+
+def _mock_gemini_reasoning(analysis_result: Dict[str, Any]) -> Dict[str, Any]:
+    """Mock Gemini reasoning for fallback when API is unavailable."""
     recommendation = analysis_result["deterministic_recommendation"]
     confidence = analysis_result["deterministic_confidence"]
     signals = analysis_result["signals"]
