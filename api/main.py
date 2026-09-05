@@ -391,6 +391,20 @@ async def api_root():
         "docs": "/api/docs"
     }
 
+# Serve frontend at root
+@app.get("/", response_class=HTMLResponse)
+async def serve_frontend():
+    """Serve the frontend dashboard."""
+    try:
+        with open("frontend/index.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content, status_code=200)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Frontend not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error serving frontend: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     # Get port from environment or default to 8000
