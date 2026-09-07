@@ -15,23 +15,26 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_clickhouse_client():
+def get_clickhouse_client(database=None):
     """Create and return a ClickHouse client."""
     host = os.getenv('CLICKHOUSE_HOST', 'localhost')
     port = int(os.getenv('CLICKHOUSE_PORT', 8123))
     username = os.getenv('CLICKHOUSE_USER', 'default')
     password = os.getenv('CLICKHOUSE_PASSWORD', '')
-    database = os.getenv('CLICKHOUSE_DATABASE', 'media_analytics')
     secure = os.getenv('CLICKHOUSE_SECURE', 'false').lower() == 'true'
 
-    client = get_client(
-        host=host,
-        port=port,
-        username=username,
-        password=password,
-        database=database,
-        secure=secure
-    )
+    client_kwargs = {
+        'host': host,
+        'port': port,
+        'username': username,
+        'password': password,
+        'secure': secure
+    }
+
+    if database is not None:
+        client_kwargs['database'] = database
+
+    client = get_client(**client_kwargs)
     return client
 
 def truncate_tables(client):
@@ -46,13 +49,13 @@ def insert_content_catalog(client):
     # Format: (content_id, title, content_type, genre, release_date, total_episodes)
     catalog_data = [
         # SHOW-001: Successful show
-        ('SHOW-001', 'The Great Adventure', 'series', 'Drama', '2023-01-15', 8),
+        ('SHOW-001', 'The Great Adventure', 'series', 'Drama', date(2023, 1, 15), 8),
         # SHOW-007: Acquisition strong, retention weak
-        ('SHOW-007', 'Mystery Manor', 'series', 'Mystery', '2023-03-01', 8),
+        ('SHOW-007', 'Mystery Manor', 'series', 'Mystery', date(2023, 3, 1), 8),
         # SHOW-042: Failing show (declining retention)
-        ('SHOW-042', 'Lost in Space', 'series', 'Sci-Fi', '2023-02-01', 8),
+        ('SHOW-042', 'Lost in Space', 'series', 'Sci-Fi', date(2023, 2, 1), 8),
         # SHOW-999: Insufficient evidence (very few episodes)
-        ('SHOW-999', 'Short-lived Show', 'series', 'Comedy', '2023-05-01', 2),
+        ('SHOW-999', 'Short-lived Show', 'series', 'Comedy', date(2023, 5, 1), 2),
     ]
 
     client.insert(
@@ -220,10 +223,22 @@ def generate_daily_metrics(client):
 def main():
     """Main seeding function."""
     print("Connecting to ClickHouse...")
-    client = get_clickhouse_client()
 
-    # Test connection
+    # First connect without specifying database to create it if needed
+    host = os.getenv('CLICKHOUSE_HOST', 'localhost')
+    port = int(os.getenv('CLICKHOUSE_PORT', 8123))
+    username = os.getenv('CLICKHOUSE_USER', 'default')
+    password = os.getenv('CLICKHOUSE_PASSWORD', '')
+    secure = os.getenv('CLICKHOUSE_SECURE', 'false').lower() == 'true'
+
     try:
+        client = get_client(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            secure=secure
+        )
         client.ping()
         print("Connected to ClickHouse successfully.")
     except Exception as e:
@@ -232,6 +247,40 @@ def main():
 
     # Ensure database exists
     client.command('CREATE DATABASE IF NOT EXISTS media_analytics')
+    print("Ensured database 'media_analytics' exists.")
+
+    # Now reconnect with the database specified
+    database = os.getenv('CLICKHOUSE_DATABASE', 'media_analytics')
+    client = get_client(
+        host=host,
+        port=port,
+        username=username,
+        password=password,
+        database=database,
+        secure=secure
+    )
+    # Test the connection with database
+    client.ping()
+    print(f"Connected to database '{database}'.")
+
+    # Create tables from schema
+    schema_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'schema.sql')
+    with open(schema_path, 'r') as f:
+        schema_sql = f.read()
+
+    # Split by semicolon and execute each statement
+    statements = [stmt.strip() for stmt in schema_sql.split(';') if stmt.strip()]
+    for statement in statements:
+        if statement:
+            try:
+                client.command(statement)
+            except Exception as e:
+                # Some statements might fail if they're USE statements or CREATE DATABASE (already done)
+                # We can ignore certain expected errors
+                if 'already exists' not in str(e).lower() and 'unknown database' not in str(e).lower():
+                    print(f"Warning: Failed to execute statement: {statement[:100]}... Error: {e}")
+
+    print("Ensured database schema exists.")
 
     # Truncate and reseed
     truncate_tables(client)

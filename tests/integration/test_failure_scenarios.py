@@ -118,8 +118,9 @@ class TestFailureScenariosIntegration(unittest.TestCase):
                     self.assertEqual(result['error']['type'], 'INVALID_INPUT')
 
     @patch('agent.agent.ContentPerformanceAgent._clickhouse_tool')
-    def test_gemini_api_failure(self, mock_clickhouse_tool):
-        """Test handling when Gemini API fails (should fall back to mock reasoning)."""
+    def test_agent_analysis_with_clickhouse(self, mock_clickhouse_tool):
+        """Test that the agent's analysis method works correctly when ClickHouse is available.
+        Reasoning is handled deterministically in the API layer."""
         # Mock successful ClickHouse and data processing
         mock_clickhouse_tool.get_content_performance.return_value = [
             {
@@ -155,9 +156,8 @@ class TestFailureScenariosIntegration(unittest.TestCase):
         }
 
         # Run the analysis (this will use the agent's analyze_content method)
-        # The agent's analyze_content method doesn't directly call Gemini -
-        # that happens in the API layer. So we test that we still get a result
-        # even if Gemini would fail (since we're not testing the API layer here)
+        # The agent's analyze_content method returns deterministic results.
+        # Reasoning (including any LLM-based reasoning) is handled in the API layer.
 
         result = self.agent.analyze_content("SHOW-042")
 

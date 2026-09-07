@@ -9,14 +9,14 @@ This agent takes a content ID and performs an automated workflow:
 2. Validates data quality
 3. Computes deterministic signals
 4. Applies a decision policy
-5. Uses Gemini to explain the evidence
+5. Uses deterministic reasoning to explain the evidence
 6. Returns a structured recommendation
 
 ## Project Structure
 
 ```
 .
-├── agent/              # ADK agent implementation
+├── agent/              # Agent implementation
 ├── analytics/          # Deterministic signal engine, data quality, decision policy
 ├── api/                # FastAPI application
 ├── data/               # Database schema
@@ -45,7 +45,6 @@ This agent takes a content ID and performs an automated workflow:
 
 See `.env.example` for required variables:
 - ClickHouse connection details
-- Google Cloud project and credentials
 - Application settings
 
 ## Usage
@@ -57,7 +56,7 @@ Send a POST request to `/analyze` with a JSON body:
 }
 ```
 
-The agent will return a structured analysis including recommendation, confidence, evidence, and Gemini-powered reasoning.
+The agent will return a structured analysis including recommendation, confidence, evidence, and deterministic reasoning.
 
 ## Testing
 

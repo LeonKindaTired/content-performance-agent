@@ -1,0 +1,4 @@
+Task completed: Google Cloud related items have been removed as requested.
+The agent now uses deterministic reasoning instead of Gemini.
+All configuration and code references to Google Cloud, Gemini, and ADK have been removed.
+The project remains functional with ClickHouse integration and deterministic analytics.

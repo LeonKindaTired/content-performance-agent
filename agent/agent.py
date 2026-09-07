@@ -1,5 +1,5 @@
 """
-Content Performance Signal Agent using Google ADK.
+Content Performance Signal Agent (without Google ADK).
 """
 
 import os
@@ -7,10 +7,6 @@ import json
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import date, datetime
-
-from google.adk.agents import Agent
-from google.adk.tools import BaseTool, FunctionTool
-from google.adk.models import Gemini
 
 # Import our modules
 import sys
@@ -25,41 +21,16 @@ from agent.prompts import SYSTEM_INSTRUCTION, format_prompt
 
 logger = logging.getLogger(__name__)
 
-class ContentPerformanceAgent(Agent):
+class ContentPerformanceAgent:
     """
     Agent that performs content performance analysis workflow:
-    Content ID → ClickHouse → Data Validation → Signals → Decision Policy → Gemini Reasoning → Recommendation
+    Content ID → ClickHouse → Data Validation → Signals → Decision Policy → Reasoning → Recommendation
     """
 
     def __init__(self):
         # Initialize ClickHouse tool
-        ContentPerformanceAgent._clickhouse_tool = get_clickhouse_tool()
-        print("Initializing ClickHouse tool")
-
-        # Define the tools this agent can use
-        tools = [
-            FunctionTool(
-                func=self._get_content_data,
-                
-            ),
-            FunctionTool(
-                func=self._validate_content_id,
-                
-            )
-        ]
-
-        # Initialize the Gemini model
-        # Note: In ADK, we typically specify the model in the agent configuration
-        # We'll rely on environment variables for the Gemini model
-        super().__init__(
-            name="content_performance_agent",
-            description="Analyzes content performance data to provide evidence-based recommendations",
-            instruction=SYSTEM_INSTRUCTION,
-            tools=tools,
-            # The model will be set via environment variables or ADK configuration
-            # For Gemini, we can use: model="gemini-pro"
-            # But ADK handles this differently; we'll let the runtime configure it
-        )
+        self._clickhouse_tool = get_clickhouse_tool()
+        logger.info("ClickHouse tool initialized")
 
     def _validate_content_id(self, content_id: str) -> Dict[str, Any]:
         """
@@ -78,10 +49,10 @@ class ContentPerformanceAgent(Agent):
         """
         try:
             # Get episode performance data
-            episodes = ContentPerformanceAgent._clickhouse_tool.get_content_performance(content_id, date_range)
+            episodes = self._clickhouse_tool.get_content_performance(content_id, date_range)
 
             # Get content metadata
-            metadata = ContentPerformanceAgent._clickhouse_tool.get_content_metadata(content_id)
+            metadata = self._clickhouse_tool.get_content_metadata(content_id)
 
             return {
                 "content_id": content_id,
@@ -101,8 +72,6 @@ class ContentPerformanceAgent(Agent):
     def analyze_content(self, content_id: str) -> Dict[str, Any]:
         """
         Main analysis workflow.
-        This is not an ADK tool but the core logic that the agent will execute.
-        In ADK, we might override the run method or use this as a helper.
         """
         logger.info(f"Starting analysis for content_id: {content_id}")
 
@@ -159,7 +128,6 @@ class ContentPerformanceAgent(Agent):
         }
 
         # Step 5: Apply decision policy
-        # Load policy from environment or config (for now, use defaults)
         policy = self._get_decision_policy()
         decision_result = evaluate_decision(signals_for_policy, policy)
         recommendation = decision_result["recommendation"]
@@ -168,9 +136,8 @@ class ContentPerformanceAgent(Agent):
         # Step 6: Calculate confidence
         confidence = calculate_confidence(data_quality, signals_for_policy, policy)
 
-        # Step 7: Prepare evidence for Gemini
-        # Structure evidence as expected by the prompt
-        evidence_for_gemini = {
+        # Step 7: Prepare evidence for reasoning (now deterministic)
+        evidence_for_reasoning = {
             "data_quality": data_quality,
             "metrics": metrics_for_policy,
             "signals": {
@@ -180,22 +147,10 @@ class ContentPerformanceAgent(Agent):
                 "engagement_velocity": aggregated.get("engagement_velocity"),
                 "new_viewer_trend": aggregated.get("new_viewer_trend"),
                 "returning_viewer_trend": aggregated.get("returning_viewer_trend"),
-                # Add raw series for transparency if needed
             }
         }
 
-        # Step 8: Invoke Gemini reasoning (this will be done by the ADK agent runtime)
-        # We'll return the structured input for Gemini, and the agent's run method
-        # will handle the LLM call.
-        # For now, we'll simulate what the agent should return before LLM processing.
-
-        # Step 9: Return structured pre-LLM output (the ADK will handle the LLM call)
-        # In a full ADK implementation, we would return this to the agent's run_loop
-        # which would then invoke the LLM with the prompt.
-        # However, for simplicity in this MVP, we'll assume the agent's tools are used
-        # and the LLM reasoning is invoked separately.
-
-        # Let's return the analysis results up to the point before LLM reasoning
+        # Step 8: Return structured pre-reasoning output
         analysis_result = {
             "content_id": content_id,
             "content_title": metadata.get("title") if metadata else None,
@@ -216,7 +171,7 @@ class ContentPerformanceAgent(Agent):
             "provenance": {
                 "data_source": "ClickHouse",
                 "retrieved_at": data_response.get("retrieved_at"),
-                "clickhouse_query_id": None  # We could extract this from query metadata
+                "clickhouse_query_id": None
             }
         }
 
@@ -254,8 +209,7 @@ class ContentPerformanceAgent(Agent):
             "minimum_sample_size": int(os.getenv('MIN_SAMPLE_SIZE', '500'))
         }
 
-# For ADK, we need to expose the agent instance
-# The ADK framework will discover and instantiate the agent
+# Factory function for compatibility with main.py
 def create_agent() -> ContentPerformanceAgent:
     return ContentPerformanceAgent()
 

@@ -24,7 +24,7 @@
         --text-2: #626d7c;
 
         /* Two accents that carry meaning, not decoration:
-       teal = measured / deterministic, violet = interpreted / model */
+           teal = measured / deterministic, violet = interpreted / model */
         --measured: #3fc7b8;
         --measured-dim: rgba(63, 199, 184, 0.12);
         --interpreted: #a48cf2;
@@ -43,6 +43,7 @@
       * {
         box-sizing: border-box;
       }
+
       html,
       body {
         margin: 0;
@@ -339,12 +340,15 @@
       .block-head.measured .dot {
         background: var(--measured);
       }
+
       .block-head.interpreted .dot {
         background: var(--interpreted);
       }
+
       .block-head.warn .dot {
         background: var(--warn);
       }
+
       .block-head.plain .dot {
         background: var(--text-2);
       }
@@ -462,6 +466,7 @@
       .warn-panel li {
         margin-bottom: 0.4rem;
       }
+
       .warn-panel li:last-child {
         margin-bottom: 0;
       }
@@ -487,6 +492,7 @@
         border: none;
         padding-bottom: 0;
       }
+
       .provenance-row span:last-child {
         color: var(--text-0);
       }
@@ -517,7 +523,7 @@
     <div class="frame">
       <div class="masthead">
         <h1>Content Performance Signal Agent</h1>
-        <span class="tag">clickhouse &middot; gemini</span>
+        <span class="tag">clickhouse</span>
       </div>
 
       <div class="query-bar">
@@ -566,7 +572,7 @@
         <div class="trace-row reasoning" id="row-reasoning">
           <span class="trace-marker"></span
           ><span class="trace-label">Interpreting evidence</span
-          ><span class="trace-tag">gemini</span>
+          ><span class="trace-tag">reasoning</span>
         </div>
       </div>
 
@@ -595,7 +601,7 @@
           <div class="block-head interpreted">
             <span class="dot"></span>
             <h3>Reasoning</h3>
-            <span class="source">gemini interpretation</span>
+            <span class="source">deterministic reasoning</span>
           </div>
           <div class="reasoning-panel" id="reasoningPanel"></div>
         </div>
@@ -641,15 +647,14 @@
         const verdictConfidence = document.getElementById("verdictConfidence");
         const evidenceGrid = document.getElementById("evidenceGrid");
         const reasoningPanel = document.getElementById("reasoningPanel");
-        const warningsBlock = document.getElementById("warningsBlock");
         const warningsList = document.getElementById("warningsList");
+        const warningsBlock = document.getElementById("warningsBlock");
         const provenance = document.getElementById("provenance");
 
         const VERDICT_COLOR = {
           RENEW: "var(--ok)",
           PROMOTE: "var(--ok)",
           REPOSITION: "var(--measured)",
-          "RE-EDIT": "var(--interpreted)",
           INVESTIGATE: "var(--warn)",
           CANCEL: "var(--bad)",
         };
@@ -740,13 +745,13 @@
         function renderResults(data) {
           results.style.display = "block";
 
-          verdictValue.textContent = data.recommendation || "\u2014";
+          verdictValue.textContent = data.recommendation || "—";
           verdictValue.style.color =
             VERDICT_COLOR[data.recommendation] || "var(--text-0)";
           verdictConfidence.textContent =
             data.confidence != null
               ? Math.round(data.confidence * 100) + "%"
-              : "\u2014";
+              : "—";
 
           (data.evidence || []).forEach((item) => {
             const [label, value] = String(item).split(": ");
