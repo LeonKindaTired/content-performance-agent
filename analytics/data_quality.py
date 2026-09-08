@@ -16,7 +16,7 @@ def validate_content_id(content_id: str) -> Tuple[bool, str]:
     if len(content_id) > 50:
         return False, "Content ID too long (max 50 characters)"
 
-    # Allow alphanumeric, hyphens, underscores
+
     if not re.match(r'^[a-zA-Z0-9_-]+$', content_id):
         return False, "Content ID contains invalid characters (only alphanumeric, hyphen, underscore allowed)"
 
@@ -33,7 +33,7 @@ def validate_episode_data(episodes: List[Dict[str, Any]]) -> Tuple[bool, List[st
         errors.append("No episode data provided")
         return False, errors
 
-    # Check for required fields in each episode
+
     required_fields = ['content_id', 'episode_number', 'episode_date',
                       'viewers', 'unique_viewers', 'completion_rate',
                       'returning_viewers', 'new_viewers', 'engagement_events']
@@ -41,14 +41,14 @@ def validate_episode_data(episodes: List[Dict[str, Any]]) -> Tuple[bool, List[st
     seen_episodes = set()
 
     for i, ep in enumerate(episodes):
-        # Check required fields
+
         for field in required_fields:
             if field not in ep:
                 errors.append(f"Episode {i+1}: missing required field '{field}'")
             elif ep[field] is None:
                 errors.append(f"Episode {i+1}: field '{field}' is null")
 
-        # Validate data types and ranges
+
         if 'episode_number' in ep and ep['episode_number'] is not None:
             if not isinstance(ep['episode_number'], int) or ep['episode_number'] <= 0:
                 errors.append(f"Episode {i+1}: episode_number must be positive integer")
@@ -61,27 +61,27 @@ def validate_episode_data(episodes: List[Dict[str, Any]]) -> Tuple[bool, List[st
                 if rate < 0 or rate > 1:
                     errors.append(f"Episode {i+1}: completion_rate must be between 0 and 1, got {rate}")
 
-        # Check for negative counts where inappropriate
+
         count_fields = ['viewers', 'unique_viewers', 'returning_viewers', 'new_viewers', 'engagement_events']
         for field in count_fields:
             if field in ep and ep[field] is not None:
                 if not isinstance(ep[field], int) or ep[field] < 0:
                     errors.append(f"Episode {i+1}: {field} must be non-negative integer")
 
-        # Check logical consistency: unique_viewers <= viewers
+
         if 'viewers' in ep and 'unique_viewers' in ep:
             if ep['viewers'] is not None and ep['unique_viewers'] is not None:
                 if ep['unique_viewers'] > ep['viewers']:
                     errors.append(f"Episode {i+1}: unique_viewers cannot exceed viewers")
 
-        # Check logical consistency: returning + new = viewers (approximately)
+
         if 'returning_viewers' in ep and 'new_viewers' in ep and 'viewers' in ep:
             if all(ep[f] is not None for f in ['returning_viewers', 'new_viewers', 'viewers']):
                 total = ep['returning_viewers'] + ep['new_viewers']
                 if total != ep['viewers']:
                     errors.append(f"Episode {i+1}: returning_viewers + new_viewers ({total}) does not equal viewers ({ep['viewers']})")
 
-        # Check for duplicate episode numbers
+
         ep_num = ep.get('episode_number')
         if ep_num is not None:
             if ep_num in seen_episodes:
@@ -98,26 +98,26 @@ def assess_data_quality(episodes: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     is_valid, errors = validate_episode_data(episodes)
 
-    # Additional quality metrics
+
     total_episodes = len(episodes)
     total_viewers = sum(ep.get('viewers', 0) for ep in episodes if ep.get('viewers') is not None)
 
-    # Determine status
+
     if not is_valid:
         status = "INVALID"
     elif total_episodes < 2:
         status = "INSUFFICIENT_EPISODES"
-    elif total_viewers < 100:  # Arbitrary threshold for insufficient sample
+    elif total_viewers < 100:
         status = "INSUFFICIENT_SAMPLE"
     else:
         status = "SUFFICIENT"
 
-    # Collect warnings (non-fatal issues)
+
     warnings = []
     if total_episodes < 5:
         warnings.append(f"Limited episode data ({total_episodes} episodes)")
 
-    # Check for missing episodes (gaps in sequence)
+
     seen_episodes = set()
     for ep in episodes:
         ep_num = ep.get('episode_number')
@@ -130,9 +130,9 @@ def assess_data_quality(episodes: List[Dict[str, Any]]) -> Dict[str, Any]:
         if missing:
             warnings.append(f"Missing episode numbers: {sorted(missing)}")
 
-    # Check for missing values in non-required fields (if we had more)
+
     missing_fields = []
-    # For simplicity, we'll check the required fields again
+
     required = ['content_id', 'episode_number', 'episode_date', 'viewers',
                'unique_viewers', 'completion_rate', 'returning_viewers',
                'new_viewers', 'engagement_events']
@@ -150,9 +150,9 @@ def assess_data_quality(episodes: List[Dict[str, Any]]) -> Dict[str, Any]:
         "errors": errors
     }
 
-# Example usage
+
 if __name__ == "__main__":
-    # Test with sample data
+
     test_episodes = [
         {
             "content_id": "SHOW-001",

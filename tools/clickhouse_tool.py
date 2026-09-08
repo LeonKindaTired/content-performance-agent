@@ -11,9 +11,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Mock data for demonstration when ClickHouse is not available
+
 MOCK_EPISODE_DATA = {
-    'SHOW-001': [  # Successful show
+    'SHOW-001': [
         {
             'content_id': 'SHOW-001',
             'episode_number': 1,
@@ -99,7 +99,7 @@ MOCK_EPISODE_DATA = {
             'engagement_events': 118300
         }
     ],
-    'SHOW-007': [  # Acquisition strong, retention weak
+    'SHOW-007': [
         {
             'content_id': 'SHOW-007',
             'episode_number': 1,
@@ -197,7 +197,7 @@ MOCK_EPISODE_DATA = {
             'engagement_events': 10407
         }
     ],
-    'SHOW-042': [  # Failing show with episode 3 drop-off
+    'SHOW-042': [
         {
             'content_id': 'SHOW-042',
             'episode_number': 1,
@@ -229,7 +229,7 @@ MOCK_EPISODE_DATA = {
             'viewers': 11059,
             'unique_viewers': 9068,
             'watch_time_minutes': 398124,
-            'completion_rate': 0.5,  # Big drop
+            'completion_rate': 0.5,
             'returning_viewers': 2765,
             'new_viewers': 8294,
             'engagement_events': 59718
@@ -241,7 +241,7 @@ MOCK_EPISODE_DATA = {
             'viewers': 10617,
             'unique_viewers': 8706,
             'watch_time_minutes': 382400,
-            'completion_rate': 0.58,  # Recovering
+            'completion_rate': 0.58,
             'returning_viewers': 3079,
             'new_viewers': 7538,
             'engagement_events': 57341
@@ -295,7 +295,7 @@ MOCK_EPISODE_DATA = {
             'engagement_events': 48816
         }
     ],
-    'SHOW-999': [  # Insufficient evidence (low viewership)
+    'SHOW-999': [
         {
             'content_id': 'SHOW-999',
             'episode_number': 1,
@@ -380,7 +380,7 @@ class ClickHouseTool:
                     database=database,
                     secure=secure
                 )
-                # Test connection
+
                 self.client.ping()
                 logger.info("ClickHouse client initialized successfully")
             except Exception as e:
@@ -406,7 +406,7 @@ class ClickHouseTool:
         if self.use_mock:
             return self._get_mock_content_performance(content_id, date_range)
 
-        # Build query
+
         query = """
             SELECT
                 content_id,
@@ -436,7 +436,7 @@ class ClickHouseTool:
 
         try:
             result = self.client.query(query, parameters=params)
-            # Convert to list of dicts
+
             columns = result.column_names
             rows = result.result_rows
             data = []
@@ -474,13 +474,13 @@ class ClickHouseTool:
             logger.error(f"Error querying ClickHouse for content metadata: {e}")
             return None
 
-    # Mock data methods
+
     def _get_mock_content_performance(self, content_id: str, date_range: Optional[Dict[str, str]] = None) -> List[Dict[str, Any]]:
         data = MOCK_EPISODE_DATA.get(content_id, [])
         if not date_range:
             return data
 
-        # Filter by date range
+
         filtered = []
         start_str = date_range.get('start')
         end_str = date_range.get('end')

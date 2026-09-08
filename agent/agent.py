@@ -8,7 +8,7 @@ import logging
 from typing import Dict, List, Any, Optional
 from datetime import date, datetime
 
-# Import our modules
+
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -28,7 +28,7 @@ class ContentPerformanceAgent:
     """
 
     def __init__(self):
-        # Initialize ClickHouse tool
+
         self._clickhouse_tool = get_clickhouse_tool()
         logger.info("ClickHouse tool initialized")
 
@@ -48,10 +48,10 @@ class ContentPerformanceAgent:
         Returns raw episode data and metadata.
         """
         try:
-            # Get episode performance data
+
             episodes = self._clickhouse_tool.get_content_performance(content_id, date_range)
 
-            # Get content metadata
+
             metadata = self._clickhouse_tool.get_content_metadata(content_id)
 
             return {
@@ -75,7 +75,7 @@ class ContentPerformanceAgent:
         """
         logger.info(f"Starting analysis for content_id: {content_id}")
 
-        # Step 1: Validate input
+
         validation = self._validate_content_id(content_id)
         if not validation["valid"]:
             return self._create_error_response(
@@ -84,7 +84,7 @@ class ContentPerformanceAgent:
                 validation["error"]
             )
 
-        # Step 2: Retrieve data from ClickHouse
+
         data_response = self._get_content_data(content_id)
         if "error" in data_response:
             return self._create_error_response(
@@ -103,22 +103,22 @@ class ContentPerformanceAgent:
                 f"No episode performance data found for content ID: {content_id}"
             )
 
-        # Step 3: Validate data quality
+
         data_quality = assess_data_quality(episodes)
 
-        # Step 4: Compute deterministic signals and metrics
+
         aggregated = aggregate_episode_data(episodes)
 
-        # Prepare metrics for decision policy
+
         metrics_for_policy = {
             "total_viewers": aggregated.get("total_viewers", 0),
             "average_completion_rate": aggregated.get("average_completion_rate", 0.0),
-            # Add other metrics as needed
+
         }
-        # Merge aggregated signals into the metrics dict for policy evaluation
+
         signals_for_policy = {
             **aggregated,
-            # Ensure we have the expected signal names
+
             "retention_decay": aggregated.get("retention_decay", {"relative_decay": 0.0}),
             "drop_off_concentration": aggregated.get("drop_off_concentration"),
             "viewership_velocity": aggregated.get("viewership_velocity", 0.0),
@@ -127,16 +127,16 @@ class ContentPerformanceAgent:
             "returning_viewer_trend": aggregated.get("returning_viewer_trend", 0.0)
         }
 
-        # Step 5: Apply decision policy
+
         policy = self._get_decision_policy()
         decision_result = evaluate_decision(signals_for_policy, policy)
         recommendation = decision_result["recommendation"]
         decision_basis = decision_result["decision_basis"]
 
-        # Step 6: Calculate confidence
+
         confidence = calculate_confidence(data_quality, signals_for_policy, policy)
 
-        # Step 7: Prepare evidence for reasoning (now deterministic)
+
         evidence_for_reasoning = {
             "data_quality": data_quality,
             "metrics": metrics_for_policy,
@@ -150,7 +150,7 @@ class ContentPerformanceAgent:
             }
         }
 
-        # Step 8: Return structured pre-reasoning output
+
         analysis_result = {
             "content_id": content_id,
             "content_title": metadata.get("title") if metadata else None,
@@ -185,7 +185,7 @@ class ContentPerformanceAgent:
                 "type": error_type,
                 "message": message
             },
-            "recommendation": "INVESTIGATE",  # Safe default
+            "recommendation": "INVESTIGATE",
             "confidence": 0.0,
             "data_quality": {"status": "ERROR"},
             "metrics": {},
@@ -198,7 +198,7 @@ class ContentPerformanceAgent:
         Load decision policy from environment variables or use defaults.
         In a production implementation, this would load from a config file.
         """
-        # For MVP, we'll use hardcoded defaults matching the spec examples
+
         return {
             "retention_positive_threshold": float(os.getenv('RETENTION_POS_THRESHOLD', '0.10')),
             "retention_negative_threshold": float(os.getenv('RETENTION_NEG_THRESHOLD', '-0.15')),
@@ -209,22 +209,22 @@ class ContentPerformanceAgent:
             "minimum_sample_size": int(os.getenv('MIN_SAMPLE_SIZE', '500'))
         }
 
-# Factory function for compatibility with main.py
+
 def create_agent() -> ContentPerformanceAgent:
     return ContentPerformanceAgent()
 
-# If this file is run directly, test the agent
+
 if __name__ == "__main__":
     import asyncio
 
     async def test_agent():
         agent = create_agent()
-        # Test validation tool
+
         print("Testing validation tool:")
         validation_result = agent._validate_content_id("SHOW-042")
         print(json.dumps(validation_result, indent=2))
 
-        # Test data retrieval (requires ClickHouse running)
+
         print("\nTesting data retrieval:")
         try:
             data_result = agent._get_content_data("SHOW-042")
@@ -234,7 +234,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Data retrieval failed (expected if ClickHouse not running): {e}")
 
-        # Test full analysis (will fail without ClickHouse)
+
         print("\nTesting full analysis:")
         try:
             analysis_result = agent.analyze_content("SHOW-042")
@@ -242,5 +242,5 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Analysis failed (expected if ClickHouse not running): {e}")
 
-    # Run the test
+
     asyncio.run(test_agent())

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 """
 Seed ClickHouse with synthetic media analytics dataset for demonstration.
 """
@@ -8,7 +8,7 @@ import sys
 from datetime import date, timedelta
 from clickhouse_connect import get_client
 
-# Add the project root to the path so we can import config if needed
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
@@ -46,15 +46,15 @@ def truncate_tables(client):
 
 def insert_content_catalog(client):
     """Insert content catalog entries for our scenarios."""
-    # Format: (content_id, title, content_type, genre, release_date, total_episodes)
+
     catalog_data = [
-        # SHOW-001: Successful show
+
         ('SHOW-001', 'The Great Adventure', 'series', 'Drama', date(2023, 1, 15), 8),
-        # SHOW-007: Acquisition strong, retention weak
+
         ('SHOW-007', 'Mystery Manor', 'series', 'Mystery', date(2023, 3, 1), 8),
-        # SHOW-042: Failing show (declining retention)
+
         ('SHOW-042', 'Lost in Space', 'series', 'Sci-Fi', date(2023, 2, 1), 8),
-        # SHOW-999: Insufficient evidence (very few episodes)
+
         ('SHOW-999', 'Short-lived Show', 'series', 'Comedy', date(2023, 5, 1), 2),
     ]
 
@@ -68,14 +68,14 @@ def insert_content_catalog(client):
 def generate_episode_performance(client):
     """Generate episode performance data for each scenario."""
 
-    # We'll generate data for 8 episodes for most shows, 2 for SHOW-999
-    # Data is deterministic based on the scenario.
 
-    # Helper to generate date series
+
+
+
     def generate_dates(start_date, count):
-        return [start_date + timedelta(days=30*i) for i in range(count)]  # Monthly releases
+        return [start_date + timedelta(days=30*i) for i in range(count)]
 
-    # SHOW-001: Successful show - high completion, stable/increasing retention, healthy acquisition
+
     show001_data = []
     start_date = date(2023, 2, 1)
     episodes = 8
@@ -84,21 +84,21 @@ def generate_episode_performance(client):
     base_completion = 0.8
     for i in range(episodes):
         episode_num = i + 1
-        # Slight growth in viewers
+
         viewers = int(base_viewers * (1.0 + i * 0.05))
-        # Completion rate slightly increasing or stable
+
         completion = min(0.9, base_completion + i * 0.01)
-        returning = int(viewers * 0.6 * completion)  # 60% of viewers are returning, scaled by completion
+        returning = int(viewers * 0.6 * completion)
         new_viewers = viewers - returning
-        watch_time = viewers * 50 * completion  # 50 minutes per viewer if they completed fully
-        engagement = int(viewers * 10 * completion)  # 10 engagement events per viewer on average
+        watch_time = viewers * 50 * completion
+        engagement = int(viewers * 10 * completion)
 
         show001_data.append([
             'SHOW-001',
             episode_num,
             dates[i],
             viewers,
-            int(viewers * 0.85),  # unique viewers ~85% of total
+            int(viewers * 0.85),
             watch_time,
             completion,
             returning,
@@ -106,20 +106,20 @@ def generate_episode_performance(client):
             engagement
         ])
 
-    # SHOW-007: Acquisition strong, retention weak - strong initial acquisition but poor retention
+
     show007_data = []
     start_date = date(2023, 3, 15)
     episodes = 8
     dates = generate_dates(start_date, episodes)
-    base_viewers = 15000  # High initial acquisition
-    base_completion = 0.7  # Starts decent
+    base_viewers = 15000
+    base_completion = 0.7
     for i in range(episodes):
         episode_num = i + 1
-        # Viewers decline slowly due to poor retention
-        viewers = int(base_viewers * (1.0 - i * 0.08))  # 8% decline per episode
-        # Completion drops significantly
-        completion = max(0.3, base_completion - i * 0.06)  # Drops by 6% each episode
-        returning = int(viewers * 0.4 * completion)  # Lower returning ratio
+
+        viewers = int(base_viewers * (1.0 - i * 0.08))
+
+        completion = max(0.3, base_completion - i * 0.06)
+        returning = int(viewers * 0.4 * completion)
         new_viewers = viewers - returning
         watch_time = viewers * 45 * completion
         engagement = int(viewers * 8 * completion)
@@ -137,7 +137,7 @@ def generate_episode_performance(client):
             engagement
         ])
 
-    # SHOW-042: Failing show - declining completion, concentrated episode drop-off
+
     show042_data = []
     start_date = date(2023, 2, 1)
     episodes = 8
@@ -146,13 +146,13 @@ def generate_episode_performance(client):
     base_completion = 0.75
     for i in range(episodes):
         episode_num = i + 1
-        viewers = int(base_viewers * (1.0 - i * 0.04))  # Slow decline in total viewers
-        # Significant drop at episode 3 (index 2)
-        if i == 2:  # Episode 3
-            completion = base_completion - 0.25  # Big drop
+        viewers = int(base_viewers * (1.0 - i * 0.04))
+
+        if i == 2:
+            completion = base_completion - 0.25
         else:
-            completion = base_completion - i * 0.02  # Gradual decline
-        completion = max(0.2, completion)  # Don't go below 20%
+            completion = base_completion - i * 0.02
+        completion = max(0.2, completion)
         returning = int(viewers * 0.5 * completion)
         new_viewers = viewers - returning
         watch_time = viewers * 48 * completion
@@ -171,16 +171,16 @@ def generate_episode_performance(client):
             engagement
         ])
 
-    # SHOW-999: Insufficient evidence - only 2 episodes with low viewers
+
     show999_data = []
     start_date = date(2023, 5, 1)
     episodes = 2
     dates = generate_dates(start_date, episodes)
-    base_viewers = 500  # Very low viewership
+    base_viewers = 500
     base_completion = 0.6
     for i in range(episodes):
         episode_num = i + 1
-        viewers = int(base_viewers * (1.0 - i * 0.1))  # Small decline
+        viewers = int(base_viewers * (1.0 - i * 0.1))
         completion = base_completion - i * 0.05
         completion = max(0.3, completion)
         returning = int(viewers * 0.5 * completion)
@@ -201,7 +201,7 @@ def generate_episode_performance(client):
             engagement
         ])
 
-    # Insert all data
+
     all_data = show001_data + show007_data + show042_data + show999_data
     client.insert(
         table='episode_performance',
@@ -215,16 +215,16 @@ def generate_episode_performance(client):
 
 def generate_daily_metrics(client):
     """Generate optional daily metrics (not strictly needed for episode-based analysis)."""
-    # For simplicity, we'll skip daily metrics for now as the spec focuses on episode performance.
-    # But we can insert some dummy data to satisfy the schema.
+
+
     print("Skipping daily metrics generation for MVP.")
-    # In a real implementation, we would generate daily aggregates from episode data.
+
 
 def main():
     """Main seeding function."""
     print("Connecting to ClickHouse...")
 
-    # First connect without specifying database to create it if needed
+
     host = os.getenv('CLICKHOUSE_HOST', 'localhost')
     port = int(os.getenv('CLICKHOUSE_PORT', 8123))
     username = os.getenv('CLICKHOUSE_USER', 'default')
@@ -245,11 +245,11 @@ def main():
         print(f"Failed to connect to ClickHouse: {e}")
         sys.exit(1)
 
-    # Ensure database exists
+
     client.command('CREATE DATABASE IF NOT EXISTS media_analytics')
     print("Ensured database 'media_analytics' exists.")
 
-    # Now reconnect with the database specified
+
     database = os.getenv('CLICKHOUSE_DATABASE', 'media_analytics')
     client = get_client(
         host=host,
@@ -259,30 +259,30 @@ def main():
         database=database,
         secure=secure
     )
-    # Test the connection with database
+
     client.ping()
     print(f"Connected to database '{database}'.")
 
-    # Create tables from schema
+
     schema_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'schema.sql')
     with open(schema_path, 'r') as f:
         schema_sql = f.read()
 
-    # Split by semicolon and execute each statement
+
     statements = [stmt.strip() for stmt in schema_sql.split(';') if stmt.strip()]
     for statement in statements:
         if statement:
             try:
                 client.command(statement)
             except Exception as e:
-                # Some statements might fail if they're USE statements or CREATE DATABASE (already done)
-                # We can ignore certain expected errors
+
+
                 if 'already exists' not in str(e).lower() and 'unknown database' not in str(e).lower():
                     print(f"Warning: Failed to execute statement: {statement[:100]}... Error: {e}")
 
     print("Ensured database schema exists.")
 
-    # Truncate and reseed
+
     truncate_tables(client)
     insert_content_catalog(client)
     generate_episode_performance(client)

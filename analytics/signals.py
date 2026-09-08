@@ -49,7 +49,7 @@ def compute_overall_retention_decay(completion_rates: List[float]) -> Dict[str, 
     latest = completion_rates[-1]
     relative_decay = safe_divide((first - latest), max(first, EPSILON))
 
-    # Largest consecutive drop (most negative change)
+
     changes = [completion_rates[i] - completion_rates[i-1] for i in range(1, len(completion_rates))]
     largest_drop = min(changes) if changes else 0.0
 
@@ -74,16 +74,16 @@ def compute_drop_off_concentration(completion_rates: List[float]) -> Optional[Di
     if not changes:
         return None
 
-    # Find the largest negative change
+
     min_change = min(changes)
-    if min_change >= 0:  # No negative changes
+    if min_change >= 0:
         return None
 
-    min_index = changes.index(min_change)  # This is the index of the change, episode number is index+2
-    episode_number = min_index + 2  # Because change between episode i and i-1, i is episode number
+    min_index = changes.index(min_change)
+    episode_number = min_index + 2
 
-    # Calculate share of total decline
-    total_decline = sum([c for c in changes if c < 0])  # Sum of negative changes
+
+    total_decline = sum([c for c in changes if c < 0])
     if total_decline == 0:
         share = 0.0
     else:
@@ -164,7 +164,7 @@ def aggregate_episode_data(episodes: List[Dict[str, Any]]) -> Dict[str, Any]:
     if not episodes:
         return {}
 
-    # Extract time series
+
     completion_rates = [ep.get('completion_rate', 0.0) for ep in episodes]
     viewers = [ep.get('viewers', 0) for ep in episodes]
     unique_viewers = [ep.get('unique_viewers', 0) for ep in episodes]
@@ -173,14 +173,14 @@ def aggregate_episode_data(episodes: List[Dict[str, Any]]) -> Dict[str, Any]:
     engagement_events = [ep.get('engagement_events', 0) for ep in episodes]
     watch_time_minutes = [ep.get('watch_time_minutes', 0.0) for ep in episodes]
 
-    # Compute aggregates
+
     total_viewers = sum(viewers)
     avg_completion = statistics.mean(completion_rates) if completion_rates else 0.0
 
-    # For velocity calculations, we'll split into previous/recent halves
+
     split_idx = len(episodes) // 2
     if split_idx == 0:
-        # Not enough data for velocity
+
         prev_viewers = sum(viewers) if viewers else 0
         recent_viewers = 0
         prev_engagement = sum(engagement_events) if engagement_events else 0
@@ -199,7 +199,7 @@ def aggregate_episode_data(episodes: List[Dict[str, Any]]) -> Dict[str, Any]:
         prev_returning = sum(returning_viewers[:split_idx])
         recent_returning = sum(returning_viewers[split_idx:])
 
-    # Overall retention decay
+
     retention_decay = compute_overall_retention_decay(completion_rates)
     drop_off = compute_drop_off_concentration(completion_rates)
 
@@ -226,9 +226,9 @@ def aggregate_episode_data(episodes: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-# Example usage and unit test helpers
+
 if __name__ == "__main__":
-    # Simple test
+
     test_completion = [0.8, 0.75, 0.7, 0.65, 0.6]
     print("Retention decay:", compute_overall_retention_decay(test_completion))
     print("Drop off concentration:", compute_drop_off_concentration(test_completion))

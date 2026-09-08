@@ -11,34 +11,34 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-# Import our agent
+
 from agent.agent import create_agent
 
-# Load environment variables
+
 load_dotenv()
 
-# Configure logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
+
 app = FastAPI(
     title="Content Performance Signal Agent",
     description="Agentic analytics workflow for content performance analysis",
     version="0.1.0"
 )
 
-# Create agent instance
+
 agent = create_agent()
 
-# Mount static files (for frontend assets if needed)
-# app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-# Request/Response models
+
+
+
 class ContentRequest(BaseModel):
     content_id: str
-    # Optional parameters for future extension
-    # date_range: Optional[Dict[str, str]] = None
+
+
 
 class ContentResponse(BaseModel):
     content_id: str
@@ -53,11 +53,11 @@ class ContentResponse(BaseModel):
     warnings: list
     provenance: dict
 
-# Health check endpoint
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
-    # Check ClickHouse connection using the agent's tool
+
     try:
         clickhouse_tool = agent._clickhouse_tool
         print(f"Tool use_mock: {clickhouse_tool.use_mock}")
@@ -77,7 +77,7 @@ async def health_check():
         }
     }
 
-# Main analysis endpoint
+
 @app.post("/api/analyze", response_model=ContentResponse)
 async def analyze_content(request: ContentRequest):
     """
@@ -86,20 +86,20 @@ async def analyze_content(request: ContentRequest):
     logger.info(f"Received analysis request for content_id: {request.content_id}")
 
     try:
-        # Run the agent's analysis workflow
+
         analysis_result = agent.analyze_content(request.content_id)
 
-        # If there was an error in the analysis, return it
+
         if "error" in analysis_result:
             raise HTTPException(
                 status_code=400,
                 detail=analysis_result["error"]
             )
 
-        # Generate reasoning based on the structured evidence
+
         llm_reasoning = _generate_reasoning(analysis_result)
 
-        # Construct the final response
+
         response = {
             "content_id": analysis_result["content_id"],
             "recommendation": analysis_result["deterministic_recommendation"],
@@ -136,7 +136,7 @@ def _generate_reasoning(analysis_result: Dict[str, Any]) -> Dict[str, Any]:
     data_quality = analysis_result["data_quality"]
     warnings = analysis_result.get("warnings", [])
 
-    # Build evidence summary from signals
+
     evidence_summary = []
 
     if signals.get("retention_decay"):
@@ -169,7 +169,7 @@ def _generate_reasoning(analysis_result: Dict[str, Any]) -> Dict[str, Any]:
             f"Engagement velocity: {ev:.1f}% ({direction})"
         )
 
-    # Determine possible explanations based on recommendation
+
     possible_explanations = []
     if recommendation == "REPOSITION":
         possible_explanations.append(
@@ -191,7 +191,7 @@ def _generate_reasoning(analysis_result: Dict[str, Any]) -> Dict[str, Any]:
             "Hypothesis: Insufficient data to confidently determine performance drivers"
         )
 
-    # Determine uncertainties
+
     uncertainties = []
     if data_quality.get("status") != "SUFFICIENT":
         uncertainties.append("Data quality or sample size limitations affect confidence")
@@ -200,7 +200,7 @@ def _generate_reasoning(analysis_result: Dict[str, Any]) -> Dict[str, Any]:
     if not uncertainties:
         uncertainties.append("Standard uncertainty inherent in predictive analytics")
 
-    # Determine next actions
+
     next_actions = []
     if recommendation == "REPOSITION":
         next_actions.append("Review episode 3 content structure, pacing, and thematic elements")
@@ -212,7 +212,7 @@ def _generate_reasoning(analysis_result: Dict[str, Any]) -> Dict[str, Any]:
         next_actions.append("Monitor performance trends for any significant changes")
         next_actions.append("Consider audience expansion strategies")
 
-    # Executive summary
+
     exec_summary = f"Based on analysis of {analysis_result['content_id']}, the recommendation is {recommendation} with {confidence:.0%} confidence. "
     if evidence_summary:
         exec_summary += "Key factors include " + "; ".join(evidence_summary[:2]) + "."
@@ -234,14 +234,14 @@ def _extract_evidence_strings(analysis_result: Dict[str, Any]) -> List[str]:
     signals = analysis_result.get("signals", {})
     metrics = analysis_result.get("metrics", {})
 
-    # Add metrics
+
     if metrics.get("total_viewers"):
         evidence.append(f"Total viewers: {metrics['total_viewers']:,}")
 
     if metrics.get("average_completion_rate") is not None:
         evidence.append(f"Average completion rate: {metrics['average_completion_rate']:.0%}")
 
-    # Add signals
+
     if signals.get("retention_decay"):
         rd = signals["retention_decay"]
         if rd and rd.get("relative_decay") is not None:
@@ -260,7 +260,7 @@ def _extract_evidence_strings(analysis_result: Dict[str, Any]) -> List[str]:
 
     return evidence
 
-# Serve frontend
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
     """Serve the frontend HTML page."""
@@ -271,7 +271,7 @@ async def serve_frontend():
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Frontend not found")
 
-# API root endpoint
+
 @app.get("/api/")
 async def api_root():
     """API root endpoint."""
@@ -281,7 +281,7 @@ async def api_root():
         "docs": "/api/docs"
     }
 
-# Serve frontend at root
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
     """Serve the frontend dashboard."""
@@ -297,6 +297,6 @@ async def serve_frontend():
 
 if __name__ == "__main__":
     import uvicorn
-    # Get port from environment or default to 8000
+
     port = int(os.getenv("APP_PORT", 8000))
     uvicorn.run("api.main:app", host="0.0.0.0", port=port, reload=True)
